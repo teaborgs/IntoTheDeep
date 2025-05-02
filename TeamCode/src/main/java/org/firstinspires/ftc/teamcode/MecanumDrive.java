@@ -54,8 +54,11 @@ import java.util.LinkedList;
 import java.util.List;
 
 @Config
-public final class MecanumDrive {
-    public static class Params {
+public final class MecanumDrive
+{
+
+    public static class Params
+    {
         // IMU orientation
         // TODO: fill in these values based on
         //   see https://ftc-docs.firstinspires.org/en/latest/programming_resources/imu/imu.html?highlight=imu#physical-hub-mounting
@@ -72,7 +75,7 @@ public final class MecanumDrive {
         // feedforward parameters (in tick units)
         public double kS = 1.7209568539422105;
         public double kV = 0.0003738430032473928;
-        public double kA = 0.000165;
+        public double kA = 0.00012;
 
         // path profile parameters (in inches)
         public double maxWheelVel = 80;
@@ -84,13 +87,13 @@ public final class MecanumDrive {
         public double maxAngAccel = Math.PI;
 
         // path controller gains
-        public double axialGain = 6.9;
+        public double axialGain = 8.4;
         public double lateralGain = 5.8;
-        public double headingGain = 7; // shared with turn
+        public double headingGain = 8.4; // shared with turn
 
-        public double axialVelGain = 0.156;
-        public double lateralVelGain = 0.0079;
-        public double headingVelGain = 0.0923; // shared with turn
+        public double axialVelGain = 1.5;
+        public double lateralVelGain = 0.0048;
+        public double headingVelGain = 1.5; // shared with turn
     }
 
     public static Params PARAMS = new Params();
@@ -114,7 +117,7 @@ public final class MecanumDrive {
 
     public final LazyImu lazyImu;
 
-    public final Localizer localizer;
+    //public final Localizer localizer;
     public Pose2d pose;
 
     private final LinkedList<Pose2d> poseHistory = new LinkedList<>();
@@ -124,7 +127,8 @@ public final class MecanumDrive {
     private final DownsampledWriter driveCommandWriter = new DownsampledWriter("DRIVE_COMMAND", 50_000_000);
     private final DownsampledWriter mecanumCommandWriter = new DownsampledWriter("MECANUM_COMMAND", 50_000_000);
 
-    public class DriveLocalizer implements Localizer {
+    public class DriveLocalizer implements Localizer
+    {
         public final Encoder leftFront, leftBack, rightBack, rightFront;
         public final IMU imu;
 
@@ -132,7 +136,8 @@ public final class MecanumDrive {
         private Rotation2d lastHeading;
         private boolean initialized;
 
-        public DriveLocalizer() {
+        public DriveLocalizer()
+        {
             leftFront = new OverflowEncoder(new RawEncoder(MecanumDrive.this.leftFront));
             leftBack = new OverflowEncoder(new RawEncoder(MecanumDrive.this.leftBack));
             rightBack = new OverflowEncoder(new RawEncoder(MecanumDrive.this.rightBack));
@@ -145,7 +150,8 @@ public final class MecanumDrive {
         }
 
         @Override
-        public Twist2dDual<Time> update() {
+        public Twist2dDual<Time> update()
+        {
             PositionVelocityPair leftFrontPosVel = leftFront.getPositionAndVelocity();
             PositionVelocityPair leftBackPosVel = leftBack.getPositionAndVelocity();
             PositionVelocityPair rightBackPosVel = rightBack.getPositionAndVelocity();
@@ -158,7 +164,8 @@ public final class MecanumDrive {
 
             Rotation2d heading = Rotation2d.exp(angles.getYaw(AngleUnit.RADIANS));
 
-            if (!initialized) {
+            if (!initialized)
+            {
                 initialized = true;
 
                 lastLeftFrontPos = leftFrontPosVel.position;
@@ -218,12 +225,14 @@ public final class MecanumDrive {
         this(hardwareMap, new Pose2d(0, 0, 0));
     }
 
-    public MecanumDrive(HardwareMap hardwareMap, Pose2d pose) {
+    public MecanumDrive(HardwareMap hardwareMap, Pose2d pose)
+    {
         this.pose = pose;
 
-        LynxFirmware.throwIfModulesAreOutdated(hardwareMap);
+        //LynxFirmware.throwIfModulesAreOutdated(hardwareMap);
 
-        for (LynxModule module : hardwareMap.getAll(LynxModule.class)) {
+        for (LynxModule module : hardwareMap.getAll(LynxModule.class))
+        {
             module.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
         }
 
@@ -250,17 +259,19 @@ public final class MecanumDrive {
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
-        localizer = new ThreeDeadWheelLocalizer(hardwareMap, PARAMS.inPerTick);
+        //localizer = new ThreeDeadWheelLocalizer(hardwareMap, lazyImu.get(), PARAMS.inPerTick);
 
         FlightRecorder.write("MECANUM_PARAMS", PARAMS);
     }
 
-    public void setDrivePowers(PoseVelocity2d powers) {
+    public void setDrivePowers(PoseVelocity2d powers)
+    {
         MecanumKinematics.WheelVelocities<Time> wheelVels = new MecanumKinematics(1).inverse(
                 PoseVelocity2dDual.constant(powers, 1));
 
         double maxPowerMag = 1;
-        for (DualNum<Time> power : wheelVels.all()) {
+        for (DualNum<Time> power : wheelVels.all())
+        {
             maxPowerMag = Math.max(maxPowerMag, power.value());
         }
 
@@ -269,7 +280,8 @@ public final class MecanumDrive {
         rightBack.setPower(wheelVels.rightBack.get(0) / maxPowerMag);
         rightFront.setPower(wheelVels.rightFront.get(0) / maxPowerMag);
     }
-
+}
+    /*
     public final class FollowTrajectoryAction implements Action {
         public final TimeTrajectory timeTrajectory;
         private double beginTs = -1;
@@ -313,7 +325,7 @@ public final class MecanumDrive {
             boolean isPositionCorrect = error.position.norm() < 2;
             boolean isHeadingCorrect = Math.toDegrees(Math.abs(error.heading.toDouble())) < 0.01;
             boolean fallback = t - 0.0 >= timeTrajectory.duration;
-            if ((trajOver && isPositionCorrect && isHeadingCorrect) || fallback) {
+            if ((trajOver && isPositionCorrect && isHeadingCorrect) || fallback) { //|| fallback
                 leftFront.setPower(0);
                 leftBack.setPower(0);
                 rightBack.setPower(0);
@@ -382,7 +394,7 @@ public final class MecanumDrive {
             c.strokePolyline(xPoints, yPoints);
         }
     }
-
+    /*
     public final class TurnAction implements Action {
         private final TimeTurn turn;
 
@@ -413,7 +425,6 @@ public final class MecanumDrive {
 
             Pose2dDual<Time> txWorldTarget = turn.get(t);
             targetPoseWriter.write(new PoseMessage(txWorldTarget.value()));
-
             PoseVelocity2d robotVelRobot = updatePoseEstimate();
 
             PoseVelocity2dDual<Time> command = new HolonomicController(
@@ -421,6 +432,7 @@ public final class MecanumDrive {
                     PARAMS.axialVelGain, PARAMS.lateralVelGain, PARAMS.headingVelGain
             )
                     .compute(txWorldTarget, pose, robotVelRobot);
+
             driveCommandWriter.write(new DriveCommandMessage(command));
 
             MecanumKinematics.WheelVelocities<Time> wheelVels = kinematics.inverse(command);
@@ -461,7 +473,7 @@ public final class MecanumDrive {
             c.fillCircle(turn.beginPose.position.x, turn.beginPose.position.y, 2);
         }
     }
-
+    /*
     public PoseVelocity2d updatePoseEstimate() {
         Twist2dDual<Time> twist = localizer.update();
         pose = pose.plus(twist.value());
@@ -475,7 +487,8 @@ public final class MecanumDrive {
 
         return twist.velocity().value();
     }
-
+     */
+    /*
     private void drawPoseHistory(Canvas c) {
         double[] xPoints = new double[poseHistory.size()];
         double[] yPoints = new double[poseHistory.size()];
@@ -509,3 +522,5 @@ public final class MecanumDrive {
         );
     }
 }
+
+     */

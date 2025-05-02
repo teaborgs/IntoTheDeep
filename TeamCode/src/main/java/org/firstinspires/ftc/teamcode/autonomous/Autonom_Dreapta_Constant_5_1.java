@@ -15,19 +15,20 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import org.firstinspires.ftc.teamcode.BaseOpMode;
 import org.firstinspires.ftc.teamcode.RobotHardware;
+import org.firstinspires.ftc.teamcode.RobotHardwareAutoDreapta;
 import org.firstinspires.ftc.teamcode.systems.ExtendoSystem;
 import org.firstinspires.ftc.teamcode.systems.LiftSystem;
 import org.firstinspires.ftc.teamcode.systems.TumblerSystem;
 
-@Autonomous(name = "Autonom_Dreapta_D", group = "Auto")
-public class Autonom_Dreapta_D extends BaseOpMode
+@Autonomous(name = "Autonom_Dreapta_Constant_5_1", group = "Auto")
+public class Autonom_Dreapta_Constant_5_1 extends BaseOpMode
 {
-	private RobotHardware robot;
+	private RobotHardwareAutoDreapta robot;
 
 	@Override
 	protected void OnInitialize()
 	{
-		robot = new RobotHardware(hardwareMap);
+		robot = new RobotHardwareAutoDreapta(hardwareMap);
 		robot.init();
 
 		robot.lift.setLiftPower(1);
@@ -58,9 +59,9 @@ public class Autonom_Dreapta_D extends BaseOpMode
 						robot.lift.moveLiftTo(LiftSystem.LiftLevel.CHAMBER_HIGH),
 						robot.scoreTumbler.setDestinationAction(TumblerSystem.TumblerDestination.HOLD)
 				),
-				WaitFor(0.15),
+				WaitFor(0.05),
 				robot.lift.moveLiftTo(LiftSystem.LiftLevel.IDLE),
-				WaitFor(0.25),
+				WaitFor(0.05),
 				robot.scoreClaw.openAction()
 		));
 		Actions.runBlocking(
@@ -69,7 +70,7 @@ public class Autonom_Dreapta_D extends BaseOpMode
 								.setTangent(Math.toRadians(45))
 								.splineToConstantHeading(new Vector2d(-23.6, 25), Math.toRadians(90), (pose2dDual, posePath, v) -> 150, (pose2dDual, posePath, v) -> new MinMax(-150, 150))
 								.setTangent(Math.toRadians(180))
-								.splineToConstantHeading(new Vector2d(-46, 38), Math.toRadians(45), (pose2dDual, posePath, v) -> 150, (pose2dDual, posePath, v) -> new MinMax(-150, 150))
+								.splineToConstantHeading(new Vector2d(-45.27, 38), Math.toRadians(45), (pose2dDual, posePath, v) -> 150, (pose2dDual, posePath, v) -> new MinMax(-150, 150))
 								.setTangent(0)
 								.lineToX(-9.84)
 								.setTangent(Math.toRadians(180))
@@ -77,26 +78,31 @@ public class Autonom_Dreapta_D extends BaseOpMode
 								.setTangent(0)
 								.lineToX(-9.84)
 								.setTangent(Math.toRadians(180))
-								.splineToConstantHeading(new Vector2d(-45.27, 57), Math.toRadians(45), (pose2dDual, posePath, v) -> 150, (pose2dDual, posePath, v) -> new MinMax(-150, 150))
+								.splineToConstantHeading(new Vector2d(-45.27, 55), Math.toRadians(45), (pose2dDual, posePath, v) -> 150, (pose2dDual, posePath, v) -> new MinMax(-150, 150))
 								.setTangent(0)
 								.lineToX(-9.84)
-								.setTangent(Math.toRadians(270))
-								.splineToLinearHeading(new Pose2d(-0.78, 28.5, Math.toRadians(0)), Math.toRadians(0))
-								.setTangent(Math.toRadians(0))
-								.lineToX(2.3)
+								//.setTangent(Math.toRadians(270))
+								//.splineToLinearHeading(new Pose2d(-0.78, 28.5, Math.toRadians(0)), Math.toRadians(0))
+								//.setTangent(Math.toRadians(0))
+								//.lineToX(0.2)
+								.setTangent(-(Math.PI/2.6))
+								.lineToX(0.2)
 								.build(),
 						robot.scoreRotator.closeAction(),
 						robot.scoreStumbler.setDestinationAction(TumblerSystem.TumblerDestination.BUSY),
 						RunSequentially(
 								WaitFor(0.25),
 								robot.scoreTumbler.setDestinationAction(TumblerSystem.TumblerDestination.BUSY)
+
 						)
 				)
 		);
+
 		Actions.runBlocking(RunSequentially(
 				robot.scoreClaw.closeAction(),
-				WaitFor(0.5)
+				WaitFor(0.07)
 		));
+
 
 		Actions.runBlocking(RunSequentially(
 				RunInParallel(
@@ -110,16 +116,16 @@ public class Autonom_Dreapta_D extends BaseOpMode
 						robot.scoreStumbler.setDestinationAction(TumblerSystem.TumblerDestination.HOLD),
 						robot.scoreTumbler.setDestinationAction(TumblerSystem.TumblerDestination.HOLD)
 				),
-				WaitFor(0.1),
+				WaitFor(0.05),
 				robot.lift.moveLiftTo(LiftSystem.LiftLevel.IDLE),
-				WaitFor(0.45),
+				WaitFor(0.1),
 				robot.scoreClaw.openAction()
 		));
 		Actions.runBlocking(RunSequentially(
 				RunInParallel(
 						robot.drivetrain.actionBuilder(robot.drivetrain.pose)
 								.setTangent(Math.PI/3.56)
-								.lineToX(1.3)
+								.lineToX(0.2)
 								//.lineToX(-5)
 								.build(),
 						robot.scoreRotator.closeAction(),
@@ -129,9 +135,9 @@ public class Autonom_Dreapta_D extends BaseOpMode
 								robot.scoreTumbler.setDestinationAction(TumblerSystem.TumblerDestination.BUSY)
 						)
 				),
-				WaitFor(0.1),
+				//WaitFor(0.05),
 				robot.scoreClaw.closeAction(),
-				WaitFor(0.5)
+				WaitFor(0.07)
 		));
 		Actions.runBlocking(RunSequentially(
 				RunInParallel(
@@ -145,16 +151,16 @@ public class Autonom_Dreapta_D extends BaseOpMode
 						robot.scoreStumbler.setDestinationAction(TumblerSystem.TumblerDestination.HOLD),
 						robot.scoreTumbler.setDestinationAction(TumblerSystem.TumblerDestination.HOLD)
 				),
-				WaitFor(0.1),
+				WaitFor(0.05),
 				robot.lift.moveLiftTo(LiftSystem.LiftLevel.IDLE),
-				WaitFor(0.45),
+				WaitFor(0.1),
 				robot.scoreClaw.openAction()
 		));
 		Actions.runBlocking(RunSequentially(
 				RunInParallel(
 						robot.drivetrain.actionBuilder(robot.drivetrain.pose)
 								.setTangent(Math.PI/3.6)
-								.lineToX(1.5)
+								.lineToX(0.2)
 								//.lineToX(-5)
 								.build(),
 						robot.scoreRotator.closeAction(),
@@ -164,9 +170,9 @@ public class Autonom_Dreapta_D extends BaseOpMode
 								robot.scoreTumbler.setDestinationAction(TumblerSystem.TumblerDestination.BUSY)
 						)
 				),
-				WaitFor(0.1),
+				//WaitFor(0.05),
 				robot.scoreClaw.closeAction(),
-				WaitFor(0.5)
+				WaitFor(0.07)
 		));
 		Actions.runBlocking(RunSequentially(
 				RunInParallel(
@@ -180,17 +186,17 @@ public class Autonom_Dreapta_D extends BaseOpMode
 						robot.scoreStumbler.setDestinationAction(TumblerSystem.TumblerDestination.HOLD),
 						robot.scoreTumbler.setDestinationAction(TumblerSystem.TumblerDestination.HOLD)
 				),
-				WaitFor(0.1),
+				WaitFor(0.05),
 				robot.lift.moveLiftTo(LiftSystem.LiftLevel.IDLE),
-				WaitFor(0.45),
+				WaitFor(0.1),
 				robot.scoreClaw.openAction()
 
-				));
+		));
 		Actions.runBlocking(RunSequentially(
 				RunInParallel(
 						robot.drivetrain.actionBuilder(robot.drivetrain.pose)
 								.setTangent(Math.PI/3.72)
-								.lineToX(1.5)
+								.lineToX(0.2)
 								//.lineToX(-5)
 								.build(),
 						robot.scoreRotator.closeAction(),
@@ -200,9 +206,9 @@ public class Autonom_Dreapta_D extends BaseOpMode
 								robot.scoreTumbler.setDestinationAction(TumblerSystem.TumblerDestination.BUSY)
 						)
 				),
-				WaitFor(0.1),
+				//WaitFor(0.05),
 				robot.scoreClaw.closeAction(),
-				WaitFor(0.5)
+				WaitFor(0.07)
 		));
 		Actions.runBlocking(RunSequentially(
 				RunInParallel(
@@ -216,16 +222,16 @@ public class Autonom_Dreapta_D extends BaseOpMode
 						robot.scoreStumbler.setDestinationAction(TumblerSystem.TumblerDestination.HOLD),
 						robot.scoreTumbler.setDestinationAction(TumblerSystem.TumblerDestination.HOLD)
 				),
-				WaitFor(0.1),
+				WaitFor(0.05),
 				robot.lift.moveLiftTo(LiftSystem.LiftLevel.IDLE),
-				WaitFor(0.45),
+				WaitFor(0.1),
 				robot.scoreClaw.openAction()
-				));
+		));
 		Actions.runBlocking(RunSequentially(
 				RunInParallel(
 						robot.drivetrain.actionBuilder(robot.drivetrain.pose)
 								.setTangent(Math.PI/3.86)
-								.lineToX(1.5)
+								.lineToX(0.2)
 								//.lineToX(-5)
 								.build(),
 						robot.scoreRotator.closeAction(),
@@ -233,6 +239,28 @@ public class Autonom_Dreapta_D extends BaseOpMode
 						RunSequentially(
 								WaitFor(0.25),
 								robot.scoreTumbler.setDestinationAction(TumblerSystem.TumblerDestination.BUSY)
+						)
+				),
+				//WaitFor(0.05),
+				robot.scoreClaw.closeAction(),
+				WaitFor(0.07)
+		));
+		Actions.runBlocking(RunSequentially(
+				RunInParallel(
+						robot.drivetrain.actionBuilder(robot.drivetrain.pose)
+								.setTangent(Math.PI/2)
+								//.splineToLinearHeading(new Pose2d(-5, -49, Math.toRadians(100)), Math.toRadians(100))
+								.lineToYLinearHeading(-52,Math.toRadians(90))
+								//.lineToX(-49)
+								.build(),
+
+						robot.lift.moveLiftTo(LiftSystem.LiftLevel.BASKET_HIGH),
+						robot.scoreRotator.openAction(),
+						robot.scoreStumbler.setDestinationAction(TumblerSystem.TumblerDestination.HOLD),
+						robot.scoreTumbler.setDestinationAction(TumblerSystem.TumblerDestination.HOLD),
+						RunSequentially(
+								WaitFor(2.3),
+								robot.scoreClaw.openAction()
 						)
 				)
 		));
@@ -250,5 +278,4 @@ public class Autonom_Dreapta_D extends BaseOpMode
 /*
 	}
 }
-
  */

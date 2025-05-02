@@ -1,7 +1,9 @@
+
 package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.DualNum;
+import com.acmerobotics.roadrunner.Rotation2d;
 import com.acmerobotics.roadrunner.Time;
 import com.acmerobotics.roadrunner.Twist2dDual;
 import com.acmerobotics.roadrunner.Vector2d;
@@ -14,7 +16,9 @@ import com.acmerobotics.roadrunner.ftc.RawEncoder;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.IMU;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.messages.ThreeDeadWheelInputsMessage;
 
 @Config
@@ -31,10 +35,14 @@ public final class ThreeDeadWheelLocalizer implements Localizer {
 
 	public final double inPerTick;
 
+	public final IMU imu;
+	private Rotation2d lastHeading;
+	private double lastRawHeadingVel, headingVelOffset;
+
 	private int lastPar0Pos, lastPar1Pos, lastPerpPos;
 	private boolean initialized;
 
-	public ThreeDeadWheelLocalizer(HardwareMap hardwareMap, double inPerTick) {
+	public ThreeDeadWheelLocalizer(HardwareMap hardwareMap, IMU imu, double inPerTick) {
 		// TODO: make sure your config has **motors** with these names (or change them)
 		//   the encoders should be plugged into the slot matching the named motor
 		//   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
@@ -48,14 +56,20 @@ public final class ThreeDeadWheelLocalizer implements Localizer {
 		perp.setDirection(DcMotorSimple.Direction.REVERSE);
 
 		this.inPerTick = inPerTick;
+		this.imu = imu;
 
 		FlightRecorder.write("THREE_DEAD_WHEEL_PARAMS", PARAMS);
+	}
+
+	public ThreeDeadWheelLocalizer(HardwareMap hardwareMap, double inPerTick) {
+		this(hardwareMap, null, inPerTick);
 	}
 
 	public Twist2dDual<Time> update() {
 		PositionVelocityPair par0PosVel = par0.getPositionAndVelocity();
 		PositionVelocityPair par1PosVel = par1.getPositionAndVelocity();
 		PositionVelocityPair perpPosVel = perp.getPositionAndVelocity();
+		Rotation2d headingRot = null;
 
 		FlightRecorder.write("THREE_DEAD_WHEEL_INPUTS", new ThreeDeadWheelInputsMessage(par0PosVel, par1PosVel, perpPosVel));
 
@@ -65,6 +79,8 @@ public final class ThreeDeadWheelLocalizer implements Localizer {
 			lastPar0Pos = par0PosVel.position;
 			lastPar1Pos = par1PosVel.position;
 			lastPerpPos = perpPosVel.position;
+
+			if(imu != null) lastHeading = Rotation2d.exp(imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
 
 			return new Twist2dDual<>(
 					Vector2dDual.constant(new Vector2d(0.0, 0.0), 2),
@@ -80,6 +96,16 @@ public final class ThreeDeadWheelLocalizer implements Localizer {
 				(par0PosDelta - par1PosDelta) / (PARAMS.par0YTicks - PARAMS.par1YTicks),
 				(par0PosVel.velocity - par1PosVel.velocity) / (PARAMS.par0YTicks - PARAMS.par1YTicks),
 		});
+
+		if(imu!=null) {
+			headingRot = Rotation2d.exp(imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
+			double headingDelta = headingRot.minus(lastHeading);
+			double headingVel = getHeadingVelocity();
+			heading = new DualNum<>(new double[]{
+					headingDelta,
+					headingVel,
+			});
+		}
 
 		Twist2dDual<Time> twist = new Twist2dDual<>(
 				new Vector2dDual<>(
@@ -98,7 +124,20 @@ public final class ThreeDeadWheelLocalizer implements Localizer {
 		lastPar0Pos = par0PosVel.position;
 		lastPar1Pos = par1PosVel.position;
 		lastPerpPos = perpPosVel.position;
+		if(imu != null) lastHeading = headingRot;
 
 		return twist;
+	}
+
+	// see https://github.com/FIRST-Tech-Challenge/FtcRobotController/issues/617
+	private double getHeadingVelocity()
+	{
+		if (imu == null) return 0;
+		double rawHeadingVel = imu.getRobotAngularVelocity(AngleUnit.RADIANS).zRotationRate;
+		if (Math.abs(rawHeadingVel - lastRawHeadingVel) > Math.PI) {
+			headingVelOffset -= Math.signum(rawHeadingVel) * 2 * Math.PI;
+		}
+		lastRawHeadingVel = rawHeadingVel;
+		return headingVelOffset + rawHeadingVel;
 	}
 }
