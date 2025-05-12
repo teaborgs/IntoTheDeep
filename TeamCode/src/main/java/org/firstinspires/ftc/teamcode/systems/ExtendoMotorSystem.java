@@ -9,8 +9,8 @@ public class ExtendoMotorSystem extends AbstractSystem {
 	private final DcMotorEx extendo;
 
 	private final int RETRACTED = 0;
-	private final int HALF = 300;
-	private final int EXTENDED = 800;
+	private final int HALF = 250;
+	private final int EXTENDED = 600;
 
 	private ExtendoLevel _level = ExtendoLevel.RETRACTED;
 

@@ -29,7 +29,10 @@ public final class RobotHardwareNEW {
 
 		intake = new IntakeSystem(hardwareMap.get(DcMotorEx.class, "intake"));
 		extendo = new ExtendoMotorSystem(hardwareMap.get(DcMotorEx.class, "extendo"));
-
+		lift = new LiftSystem(hardwareMap.get(DcMotorEx.class, "lift1"), hardwareMap.get(DcMotorEx.class, "lift2"));
+		intakeTumbler = new TumblerSystem(hardwareMap.get(Servo.class, "intakeTumbler"),
+				0.11f, 0.14f, 0.14f, 0.11f, 0.23f
+		);
 		// Uncomment and edit these as needed
 		/*
 		intakeTumbler = new TumblerSystem(hardwareMap.get(Servo.class, "intakeTumbler"), 0.14f, 0.14f, 0.14f, 0.14f, 0.23f);
@@ -47,6 +50,9 @@ public final class RobotHardwareNEW {
 		// ✅ Initialize intake system
 		intake.init();
 		extendo.init();
+		lift.init();
+		intakeTumbler.init();
+		intakeTumbler.setDestination(TumblerSystem.TumblerDestination.IDLE);
 
 		// Uncomment and edit these as needed
 		/*

@@ -27,6 +27,7 @@ import org.firstinspires.ftc.teamcode.Utilities;
 import org.firstinspires.ftc.teamcode.systems.ExtendoServoSystem;
 import org.firstinspires.ftc.teamcode.systems.ExtendoMotorSystem;
 import org.firstinspires.ftc.teamcode.systems.ExtendoSystem;
+import org.firstinspires.ftc.teamcode.systems.IntakeSystem.IntakeDirection;
 import org.firstinspires.ftc.teamcode.systems.LiftSystem;
 import org.firstinspires.ftc.teamcode.systems.RotatorSystem;
 import org.firstinspires.ftc.teamcode.systems.TumblerSystem;
@@ -42,6 +43,7 @@ public final class tbdOp extends LinearOpMode {
 	private InputSystem driveInput;
 	private InputSystem armInput;
 	private Utilities.State suspendState = Utilities.State.IDLE;
+	private TumblerSystem intakeTumbler;
 
 	private static class Keybindings {
 		public static class Arm {
@@ -61,11 +63,11 @@ public final class tbdOp extends LinearOpMode {
 			public static final InputSystem.Axis DRIVE_ROT_L = new InputSystem.Axis("left_trigger");
 			public static final InputSystem.Axis DRIVE_ROT_R = new InputSystem.Axis("right_trigger");
 			public static final	InputSystem.Key INTAKE_FORWARD = new InputSystem.Key("right_bumper");
+			public static final InputSystem.Key INTAKE_REVERSE = new InputSystem.Key("b");
 			public static final InputSystem.Key EXTENDO_FULL_KEY = new InputSystem.Key("dpad_up");
 			public static final InputSystem.Key EXTENDO_HALF_KEY = new InputSystem.Key("dpad_left");
 			public static final InputSystem.Key EXTENDO_ZERO_KEY = new InputSystem.Key("dpad_down");
 			public static final InputSystem.Key GRAB_TRANSFER_KEY = new InputSystem.Key("a");
-			public static final InputSystem.Key GRAB_HOLD_KEY = new InputSystem.Key("b");
 			public static final InputSystem.Key GRAB_WALL_KEY = new InputSystem.Key("x");
 			public static final InputSystem.Key GRAB_RESET_KEY = new InputSystem.Key("y");
 		}
@@ -94,6 +96,7 @@ public final class tbdOp extends LinearOpMode {
 	protected void OnStart() {
 		robot = new RobotHardwareNEW(hardwareMap);
 		robot.init();
+		intakeTumbler = robot.intakeTumbler;
 	}
 
 	protected void OnRun() {
@@ -101,9 +104,9 @@ public final class tbdOp extends LinearOpMode {
 		Suspender();
 		Drive();
 		IntakeControl();
-		if (suspendState == Utilities.State.BUSY) return;
 		Extendo();
 		Scorer();
+		if (suspendState == Utilities.State.BUSY) return;
 	}
 
 
@@ -123,10 +126,10 @@ public final class tbdOp extends LinearOpMode {
 	private boolean waitingToDrop = false;
 	private boolean grabbedWall = false;
 	private boolean liftedSpecimen = false;
-	
+
 	private ExtendoMotorSystem.ExtendoLevel extendoLevel = ExtendoMotorSystem.ExtendoLevel.RETRACTED;
-	//private LiftSystem.LiftLevel liftLevel = LiftSystem.LiftLevel.BASKET_HIGH;
-	public IntakeSystem.IntakeDirection intakeDirection = IntakeSystem.IntakeDirection.STOP;
+	private LiftSystem.LiftLevel liftLevel = LiftSystem.LiftLevel.BASKET_HIGH;
+	public IntakeDirection intakeDirection = IntakeDirection.STOP;
 	private boolean liftOverride = false;
 	/*
 	private ExtendoSystem.ExtendoLevel extendoLevel = ExtendoSystem.ExtendoLevel.RETRACTED;
@@ -154,11 +157,23 @@ public final class tbdOp extends LinearOpMode {
 	{
 
 	}
-	private void Scorer()
-	{
+	private void Scorer() {
 
+			if (armInput.wasPressedThisFrame(Keybindings.Arm.BASKET_LOW_KEY)) {
+				liftLevel = LiftSystem.LiftLevel.BASKET_LOW;
+			} else if (armInput.wasPressedThisFrame(Keybindings.Arm.BASKET_HIGH_KEY)) {
+				liftLevel = LiftSystem.LiftLevel.BASKET_HIGH;
+			} else if (armInput.wasPressedThisFrame(Keybindings.Arm.CHAMBER_HIGH_KEY)) {
+				liftLevel = LiftSystem.LiftLevel.CHAMBER_HIGH;
+			}
+
+			robot.lift.setLiftLevel(liftLevel);
 
 	}
+
+
+
+
 	private void Extendo()
 	{
 		if (driveInput.wasPressedThisFrame(tbdOp.Keybindings.Drive.EXTENDO_FULL_KEY))
@@ -173,11 +188,18 @@ public final class tbdOp extends LinearOpMode {
 	}
 
 	private void IntakeControl() {
-		if(driveInput.isPressed(tbdOp.Keybindings.Drive.INTAKE_FORWARD)) {
-			intakeDirection = IntakeSystem.IntakeDirection.FORWARD;
-		} else {
-			intakeDirection = IntakeSystem.IntakeDirection.STOP;
+		if(driveInput.isPressed(tbdOp.Keybindings.Drive.INTAKE_FORWARD))
+		{
+			intakeTumbler.setDestination(TumblerSystem.TumblerDestination.BUSY);
+			intakeDirection = IntakeDirection.FORWARD;
 		}
+		else if(driveInput.isPressed(Keybindings.Drive.INTAKE_REVERSE))
+		{
+			intakeDirection = IntakeDirection.REVERSE;
+			intakeTumbler.setDestination(TumblerSystem.TumblerDestination.HOVER);
+		}
+		else
+			intakeDirection = IntakeDirection.STOP;
 		robot.intake.setIntakeDirection(intakeDirection);
 	}
 
