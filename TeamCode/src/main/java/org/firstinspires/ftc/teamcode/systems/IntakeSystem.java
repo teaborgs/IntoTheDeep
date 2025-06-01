@@ -19,7 +19,7 @@ public class IntakeSystem extends AbstractSystem
 	public IntakeSystem(DcMotorEx intakeMotor)
 	{
 		this.intakeMotor = intakeMotor;
-		this.intakeMotor.setDirection(DcMotor.Direction.FORWARD);
+		this.intakeMotor.setDirection(DcMotor.Direction.REVERSE);
 		this.intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 		this.intakeMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 		stop(); // Ensure it's stopped on init

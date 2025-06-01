@@ -4,43 +4,35 @@ import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.InstantAction;
 import com.qualcomm.robotcore.hardware.Servo;
 
-public class OpenCloseSystem extends AbstractSystem
-{
+public class OpenCloseSystem extends AbstractSystem {
 	private float OPEN;
 	private float CLOSED;
-
 	private final Servo servo;
 
-	public OpenCloseSystem(Servo servo, float open, float closed)
-	{
+	private boolean isOpen = false; // Track state
+
+	public OpenCloseSystem(Servo servo, float open, float closed) {
 		this.servo = servo;
 		OPEN = open;
 		CLOSED = closed;
 	}
 
 	@Override
-	public void init()
-	{
-		servo.setPosition(OPEN);
+	public void init() {
+		open(); // Or setPosition(OPEN); and isOpen = true;
 	}
 
-	public void open()
-	{
+	public void open() {
 		servo.setPosition(OPEN);
+		isOpen = true;
 	}
 
-	public void close()
-	{
+	public void close() {
 		servo.setPosition(CLOSED);
+		isOpen = false;
 	}
 
-	public Action openAction()
-	{
-		return new InstantAction(this::open);
-	}
-
-	public Action closeAction()
-	{
-		return new InstantAction(this::close);
+	public boolean isOpen() {
+		return isOpen;
 	}
 }

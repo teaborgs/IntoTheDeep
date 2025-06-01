@@ -6,12 +6,12 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 public class ExtendoServoSystem extends AbstractSystem
 {
-	private final float RETRACTED = 0.637f;
+	private final float RETRACTED = 0.64f;
 	private final float HALF = 0.37f;
 	private final float SAMPLE = 0.485f;
 	private final float SECOND_SAMPLE = 0.477f;
 	private final float THIRD_SAMPLE = 0.5f;
-	private final float EXTENDED = 0.5f;
+	private final float EXTENDED = 0.33f;
 
 	private ExtendoLevel _level = ExtendoLevel.RETRACTED;
 

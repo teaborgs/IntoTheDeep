@@ -43,7 +43,8 @@ public final class tbdOp extends LinearOpMode {
 	private InputSystem driveInput;
 	private InputSystem armInput;
 	private Utilities.State suspendState = Utilities.State.IDLE;
-	private TumblerSystem intakeTumbler;
+	private TumblerSystem intakeTumbler, scoreTumbler;
+	private ExtendoServoSystem scoreExtendo;
 
 	private static class Keybindings {
 		public static class Arm {
@@ -97,16 +98,19 @@ public final class tbdOp extends LinearOpMode {
 		robot = new RobotHardwareNEW(hardwareMap);
 		robot.init();
 		intakeTumbler = robot.intakeTumbler;
+		scoreTumbler = robot.scoreTumbler;
+		scoreExtendo = robot.scoreExtendo;
 	}
 
 	protected void OnRun() {
 		//robot.lift.autoPower();
-		Suspender();
+		//Suspender();
 		Drive();
 		IntakeControl();
 		Extendo();
 		Scorer();
 		if (suspendState == Utilities.State.BUSY) return;
+		telemetry.update();
 	}
 
 
@@ -126,14 +130,13 @@ public final class tbdOp extends LinearOpMode {
 	private boolean waitingToDrop = false;
 	private boolean grabbedWall = false;
 	private boolean liftedSpecimen = false;
+	private boolean extended = false;
 
 	private ExtendoMotorSystem.ExtendoLevel extendoLevel = ExtendoMotorSystem.ExtendoLevel.RETRACTED;
 	private LiftSystem.LiftLevel liftLevel = LiftSystem.LiftLevel.BASKET_HIGH;
 	public IntakeDirection intakeDirection = IntakeDirection.STOP;
 	private boolean liftOverride = false;
 	/*
-	private ExtendoSystem.ExtendoLevel extendoLevel = ExtendoSystem.ExtendoLevel.RETRACTED;
-	private LiftSystem.LiftLevel liftLevel = LiftSystem.LiftLevel.BASKET_HIGH;
 	private boolean liftOverride = false;
 	private void Extendo()
 	{
@@ -158,7 +161,7 @@ public final class tbdOp extends LinearOpMode {
 
 	}
 	private void Scorer() {
-
+		/*
 			if (armInput.wasPressedThisFrame(Keybindings.Arm.BASKET_LOW_KEY)) {
 				liftLevel = LiftSystem.LiftLevel.BASKET_LOW;
 			} else if (armInput.wasPressedThisFrame(Keybindings.Arm.BASKET_HIGH_KEY)) {
@@ -168,30 +171,78 @@ public final class tbdOp extends LinearOpMode {
 			}
 
 			robot.lift.setLiftLevel(liftLevel);
+		telemetry.addLine("BASKET_HIGH pressed");
+		telemetry.addData("Lift Level", liftLevel.name());
+		*/
+		//GRAB AND TRANSFER
+		if (armInput.wasPressedThisFrame(Keybindings.Arm.PRIMARY_KEY)) {
+			if (robot.scoreClaw.isOpen())
+			{
+				waitingToDrop = true;
+				robot.scoreClaw.close();
+				setTimeout(() -> {
+					scoreTumbler.setDestination(TumblerSystem.TumblerDestination.TRANSFER);
+					robot.scoreExtendo.extend(ExtendoServoSystem.ExtendoLevel.RETRACTED);
+				}, 300);
+			}
+			else
+			{
+				waitingToDrop = false;
+				robot.scoreClaw.open();
+				setTimeout(() -> {
+					scoreTumbler.setDestination(TumblerSystem.TumblerDestination.IDLE);
+					robot.scoreExtendo.extend(ExtendoServoSystem.ExtendoLevel.EXTENDED);
+				}, 200);
+			}
 
+
+
+		}
+
+		if (armInput.wasPressedThisFrame(Keybindings.Arm.BASKET_LOW_KEY)) {
+			scoreTumbler.setDestination(TumblerSystem.TumblerDestination.TRANSFER);
+		} else if (armInput.wasPressedThisFrame(Keybindings.Arm.BASKET_HIGH_KEY)) {
+			scoreTumbler.setDestination(TumblerSystem.TumblerDestination.HOVER);
+		} else if (armInput.wasPressedThisFrame(Keybindings.Arm.CHAMBER_HIGH_KEY)) {
+			scoreTumbler.setDestination(TumblerSystem.TumblerDestination.IDLE);
+		}
 	}
 
 
 
 
+	ExtendoMotorSystem.ExtendoLevel newLevel = extendoLevel;
 	private void Extendo()
 	{
-		if (driveInput.wasPressedThisFrame(tbdOp.Keybindings.Drive.EXTENDO_FULL_KEY))
-			extendoLevel = ExtendoMotorSystem.ExtendoLevel.EXTENDED;
-		else if (driveInput.wasPressedThisFrame(tbdOp.Keybindings.Drive.EXTENDO_HALF_KEY))
-			extendoLevel = ExtendoMotorSystem.ExtendoLevel.HALF;
-		else if (driveInput.wasPressedThisFrame(tbdOp.Keybindings.Drive.EXTENDO_ZERO_KEY))
-			extendoLevel = ExtendoMotorSystem.ExtendoLevel.RETRACTED;
 
-		if (robot.extendo.getExtendoLevel() != extendoLevel)
+		if (driveInput.wasPressedThisFrame(tbdOp.Keybindings.Drive.EXTENDO_FULL_KEY)) {
+			newLevel = ExtendoMotorSystem.ExtendoLevel.EXTENDED;
+		} else if (driveInput.wasPressedThisFrame(tbdOp.Keybindings.Drive.EXTENDO_HALF_KEY)) {
+			newLevel = ExtendoMotorSystem.ExtendoLevel.HALF;
+		} else if (driveInput.wasPressedThisFrame(tbdOp.Keybindings.Drive.EXTENDO_ZERO_KEY)) {
+			newLevel = ExtendoMotorSystem.ExtendoLevel.RETRACTED;
+		}
+
+		if (robot.extendo.getExtendoLevel() != newLevel) {
+			extendoLevel = newLevel;
 			robot.extendo.extend(extendoLevel);
+
+			if (extendoLevel == ExtendoMotorSystem.ExtendoLevel.RETRACTED) {
+				setTimeout(() -> {
+					robot.scoreExtendo.extend(ExtendoServoSystem.ExtendoLevel.EXTENDED);
+				}, 200);
+			} else {
+				robot.scoreExtendo.extend(ExtendoServoSystem.ExtendoLevel.RETRACTED);
+			}
+		}
 	}
+
 
 	private void IntakeControl() {
 		if(driveInput.isPressed(tbdOp.Keybindings.Drive.INTAKE_FORWARD))
 		{
-			intakeTumbler.setDestination(TumblerSystem.TumblerDestination.BUSY);
 			intakeDirection = IntakeDirection.FORWARD;
+			intakeTumbler.setDestination(TumblerSystem.TumblerDestination.BUSY);
 		}
 		else if(driveInput.isPressed(Keybindings.Drive.INTAKE_REVERSE))
 		{
@@ -199,7 +250,10 @@ public final class tbdOp extends LinearOpMode {
 			intakeTumbler.setDestination(TumblerSystem.TumblerDestination.HOVER);
 		}
 		else
+		{
 			intakeDirection = IntakeDirection.STOP;
+			intakeTumbler.setDestination(TumblerSystem.TumblerDestination.IDLE);
+		}
 		robot.intake.setIntakeDirection(intakeDirection);
 	}
 

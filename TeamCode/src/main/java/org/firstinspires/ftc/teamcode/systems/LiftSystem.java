@@ -6,11 +6,12 @@ import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.InstantAction;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 public class LiftSystem extends AbstractSystem
 {
 	// IDLE, BASKET_LOW, BASKET_HIGH, CLEAR_SPECIMEN, CHAMBER_HIGH_FIXED_CLAW, CHAMBER_HIGH_PLACE_FIXED_CLAW, SUSPEND, CHAMBER_HIGH, CHAMBER_HIGH_PLACE
-	private final int[] LIFT_LEVELS = { 0, -580, -1320, -200, -780, -500, -600, -360, -770 };
+	private final int[] LIFT_LEVELS = { 100, 580, 1320, 200, 780, 500, 600, 360, 770 };
 	public int TOLERANCE = 40;
 
 	private final DcMotorEx lift1, lift2;
@@ -19,7 +20,9 @@ public class LiftSystem extends AbstractSystem
 	{
 		this.lift1 = lift1;
 		this.lift2 = lift2;
-		lift1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+		lift1.setDirection(DcMotor.Direction.REVERSE);
+		lift1.setDirection(DcMotor.Direction.FORWARD);
+		lift1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 		lift2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 		lift1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 		lift2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -30,23 +33,20 @@ public class LiftSystem extends AbstractSystem
 	@Override
 	public void init()
 	{
-		lift1.setTargetPosition(0);
-		lift2.setTargetPosition(0);
+		setLiftLevel(LiftLevel.IDLE);
 		lift1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 		lift2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 	}
 
 	public void autoPower()
 	{
-		if (lift1.isBusy())
-			lift1.setPower(1);
-		else
+		if (isLiftBusy()) {
+			lift1.setPower(0.4);
+			lift2.setPower(0.4);
+		} else {
 			lift1.setPower(0);
-
-		if (lift2.isBusy())
-			lift2.setPower(1);
-		else
-			lift2.setPower(0.0); //0.05
+			lift2.setPower(0);
+		}
 	}
 
 	public void setLiftLevel(LiftLevel level)
