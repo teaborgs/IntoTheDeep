@@ -31,11 +31,11 @@ public final class RobotHardwareNEW {
 		extendo = new ExtendoMotorSystem(hardwareMap.get(DcMotorEx.class, "extendo"));
 		lift = new LiftSystem(hardwareMap.get(DcMotorEx.class, "lift1"), hardwareMap.get(DcMotorEx.class, "lift2"));
 		scoreClaw = new OpenCloseSystem(hardwareMap.get(Servo.class, "scoreClaw"), 0.55f, 0.3f);
-		intakeTumbler = new TumblerSystem(hardwareMap.get(Servo.class, "intakeTumbler"), 0.11f, 0.47f, 0.15f, 0.5f, 0.65f);
-		scoreTumbler = new TumblerSystem(hardwareMap.get(Servo.class, "scoreTumbler"), 0.01f, 0.72f, 0.5f, 0.94f, -0.5f);
+		intakeTumbler = new TumblerSystem(hardwareMap.get(Servo.class, "intakeTumbler"), 0.11f, 0.47f, 0.15f, 0.5f, 0.55f);
+		scoreTumbler = new TumblerSystem(hardwareMap.get(Servo.class, "scoreTumbler"), 0.50f, 0.012f, 0.5f, 0.94f, -0.72f);
 		scoreExtendo = new ExtendoServoSystem(hardwareMap.get(Servo.class, "scoreExtendo"));
 
-		// Uncomment and edit these as needed
+		//
 		/*
 		intakeTumbler = new TumblerSystem(hardwareMap.get(Servo.class, "intakeTumbler"), 0.14f, 0.14f, 0.14f, 0.14f, 0.23f);
 		scoreTumbler = new TumblerSystem(hardwareMap.get(Servo.class, "scoreTumbler"), 0.99f, 0.3f, 0.5f, 0.32f, 0.41f);
@@ -47,7 +47,7 @@ public final class RobotHardwareNEW {
 	}
 
 	public void init() {
-		// ✅ Initialize intake system
+
 		intake.init();
 		extendo.init();
 		lift.init();
@@ -57,7 +57,7 @@ public final class RobotHardwareNEW {
 		scoreTumbler.init();
 		scoreExtendo.init();
 
-		// Uncomment and edit these as needed
+
 		/*
 		intakeTumbler.init();
 		scoreTumbler.setDestination(TumblerSystem.TumblerDestination.TRANSFER);

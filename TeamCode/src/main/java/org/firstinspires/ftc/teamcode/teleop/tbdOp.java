@@ -180,19 +180,30 @@ public final class tbdOp extends LinearOpMode {
 			{
 				waitingToDrop = true;
 				robot.scoreClaw.close();
+				robot.scoreExtendo.extend(ExtendoServoSystem.ExtendoLevel.RETRACTED);
 				setTimeout(() -> {
 					scoreTumbler.setDestination(TumblerSystem.TumblerDestination.TRANSFER);
-					robot.scoreExtendo.extend(ExtendoServoSystem.ExtendoLevel.RETRACTED);
-				}, 300);
+				}, 500);
+				setTimeout(() -> {
+					robot.scoreExtendo.extend(ExtendoServoSystem.ExtendoLevel.EXTENDED);
+				}, 650);
+
 			}
 			else
 			{
 				waitingToDrop = false;
 				robot.scoreClaw.open();
 				setTimeout(() -> {
+					robot.scoreExtendo.extend(ExtendoServoSystem.ExtendoLevel.RETRACTED);
+				}, 350);
+				setTimeout(() -> {
 					scoreTumbler.setDestination(TumblerSystem.TumblerDestination.IDLE);
+				}, 500);
+				setTimeout(() -> {
 					robot.scoreExtendo.extend(ExtendoServoSystem.ExtendoLevel.EXTENDED);
-				}, 200);
+				}, 800);
+
+
 			}
 
 
