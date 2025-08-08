@@ -32,7 +32,7 @@ public final class RobotHardwareNEW {
 		lift = new LiftSystem(hardwareMap.get(DcMotorEx.class, "lift1"), hardwareMap.get(DcMotorEx.class, "lift2"));
 		scoreClaw = new OpenCloseSystem(hardwareMap.get(Servo.class, "scoreClaw"), 0.55f, 0.3f);
 		intakeTumbler = new TumblerSystem(hardwareMap.get(Servo.class, "intakeTumbler"), 0.11f, 0.47f, 0.15f, 0.5f, 0.55f);
-		scoreTumbler = new TumblerSystem(hardwareMap.get(Servo.class, "scoreTumbler"), 0.50f, 0.012f, 0.5f, 0.94f, -0.72f);
+		scoreTumbler = new TumblerSystem(hardwareMap.get(Servo.class, "scoreTumbler"), 0.50f, 0.0135f, 0.5f, 0.94f, -0.72f);
 		scoreExtendo = new ExtendoServoSystem(hardwareMap.get(Servo.class, "scoreExtendo"));
 
 		//

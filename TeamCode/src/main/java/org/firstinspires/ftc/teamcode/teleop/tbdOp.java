@@ -45,6 +45,8 @@ public final class tbdOp extends LinearOpMode {
 	private Utilities.State suspendState = Utilities.State.IDLE;
 	private TumblerSystem intakeTumbler, scoreTumbler;
 	private ExtendoServoSystem scoreExtendo;
+	private DcMotorEx lift1, lift2;
+	private Servo extendo, tumbler, smallTumbler, rotator, claw, scoreClaw, scoreRotator, scoreSmallTumbler;
 
 	private static class Keybindings {
 		public static class Arm {
@@ -103,13 +105,25 @@ public final class tbdOp extends LinearOpMode {
 	}
 
 	protected void OnRun() {
-		//robot.lift.autoPower();
+		robot.lift.autoPower();
 		//Suspender();
 		Drive();
 		IntakeControl();
 		Extendo();
 		Scorer();
 		if (suspendState == Utilities.State.BUSY) return;
+		telemetry.addData("Lift1 Current (mA)", lift1.getCurrent(CurrentUnit.MILLIAMPS));
+		telemetry.addData("Lift2 Current (mA)", lift2.getCurrent(CurrentUnit.MILLIAMPS));
+		telemetry.addData("Extendo Position", extendo.getPosition());
+		telemetry.addData("Tumbler Position", tumbler.getPosition());
+		telemetry.addData("Small Tumbler Position", smallTumbler.getPosition());
+		telemetry.addData("Rotator Position", rotator.getPosition());
+		telemetry.addData("Claw Position", claw.getPosition());
+		telemetry.addData("Score Claw Position", scoreClaw.getPosition());
+		telemetry.addData("Score Rotator Position", scoreRotator.getPosition());
+		telemetry.addData("Score Small Tumbler Position", scoreSmallTumbler.getPosition());
+		telemetry.addData("Lift1 Encoder Position", lift1.getCurrentPosition());
+		telemetry.addData("Lift2 Encoder Position", lift2.getCurrentPosition());
 		telemetry.update();
 	}
 
@@ -161,7 +175,6 @@ public final class tbdOp extends LinearOpMode {
 
 	}
 	private void Scorer() {
-		/*
 			if (armInput.wasPressedThisFrame(Keybindings.Arm.BASKET_LOW_KEY)) {
 				liftLevel = LiftSystem.LiftLevel.BASKET_LOW;
 			} else if (armInput.wasPressedThisFrame(Keybindings.Arm.BASKET_HIGH_KEY)) {
@@ -173,7 +186,7 @@ public final class tbdOp extends LinearOpMode {
 			robot.lift.setLiftLevel(liftLevel);
 		telemetry.addLine("BASKET_HIGH pressed");
 		telemetry.addData("Lift Level", liftLevel.name());
-		*/
+
 		//GRAB AND TRANSFER
 		if (armInput.wasPressedThisFrame(Keybindings.Arm.PRIMARY_KEY)) {
 			if (robot.scoreClaw.isOpen())

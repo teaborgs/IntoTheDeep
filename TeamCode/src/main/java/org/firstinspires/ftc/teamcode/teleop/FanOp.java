@@ -66,7 +66,7 @@ public final class FanOp extends LinearOpMode
 		}
 	}
 
-	private static class InputSystem
+	public static class InputSystem
 	{
 		private static final float DEADZONE = 0.75f;
 

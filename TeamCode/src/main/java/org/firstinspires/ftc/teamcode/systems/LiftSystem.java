@@ -12,7 +12,7 @@ public class LiftSystem extends AbstractSystem
 {
 	// IDLE, BASKET_LOW, BASKET_HIGH, CLEAR_SPECIMEN, CHAMBER_HIGH_FIXED_CLAW, CHAMBER_HIGH_PLACE_FIXED_CLAW, SUSPEND, CHAMBER_HIGH, CHAMBER_HIGH_PLACE
 	private final int[] LIFT_LEVELS = { 100, 580, 1320, 200, 780, 500, 600, 360, 770 };
-	public int TOLERANCE = 40;
+	public int TOLERANCE = 50;
 
 	private final DcMotorEx lift1, lift2;
 
@@ -20,8 +20,8 @@ public class LiftSystem extends AbstractSystem
 	{
 		this.lift1 = lift1;
 		this.lift2 = lift2;
-		lift1.setDirection(DcMotor.Direction.REVERSE);
 		lift1.setDirection(DcMotor.Direction.FORWARD);
+		lift2.setDirection(DcMotor.Direction.REVERSE);
 		lift1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 		lift2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 		lift1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
