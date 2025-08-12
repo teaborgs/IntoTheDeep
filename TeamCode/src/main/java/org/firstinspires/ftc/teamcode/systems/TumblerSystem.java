@@ -43,6 +43,7 @@ public class TumblerSystem extends AbstractSystem
 	{
 		_destination = TumblerDestination.IDLE;
 		tumbler.setPosition(IDLE);
+
 	}
 
 	public void setDestination(TumblerDestination destination)

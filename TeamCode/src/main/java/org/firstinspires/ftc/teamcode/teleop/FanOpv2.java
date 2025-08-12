@@ -15,6 +15,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 
@@ -62,15 +63,16 @@ public final class FanOpv2 extends LinearOpMode
 			public static final InputSystem.Key SUPPRESS_KEY = new InputSystem.Key("left_bumper");
 			public static final InputSystem.Axis DRIVE_X = new InputSystem.Axis("left_stick_x");
 			public static final InputSystem.Axis DRIVE_Y = new InputSystem.Axis("left_stick_y");
+			public static final InputSystem.Axis EXTENDO_Y = new InputSystem.Axis("right_stick_y");
 			public static final InputSystem.Axis DRIVE_ROT_L = new InputSystem.Axis("left_trigger");
 			public static final InputSystem.Axis DRIVE_ROT_R = new InputSystem.Axis("right_trigger");
-			public static final InputSystem.Key EXTENDO_FULL_KEY = new InputSystem.Key("right_bumper");
-			public static final InputSystem.Key EXTENDO_HALF_KEY = new InputSystem.Key("dpad_left");
-			public static final InputSystem.Key EXTENDO_ZERO_KEY = new InputSystem.Key("dpad_down");
+
+			public static final	InputSystem.Key INTAKE_FORWARD = new InputSystem.Key("right_bumper");
+			public static final InputSystem.Key INTAKE_REVERSE = new InputSystem.Key("b");
+
 			public static final InputSystem.Axis ROTATOR_ANGLE = new InputSystem.Axis("right_stick_x");
-			public static final InputSystem.Key GRAB_TRANSFER_KEY = new InputSystem.Key("a");
-			public static final InputSystem.Key GRAB_HOLD_KEY = new InputSystem.Key("b");
-			public static final InputSystem.Key GRAB_WALL_KEY = new InputSystem.Key("x");
+			public static final InputSystem.Key SPECIMEN = new InputSystem.Key("a");
+			public static final InputSystem.Key MODE = new InputSystem.Key("x");
 			public static final InputSystem.Key AUTO_MOVE = new InputSystem.Key("y");
 		}
 	}
@@ -232,10 +234,11 @@ public final class FanOpv2 extends LinearOpMode
 	}
 
 	private MecanumDrive drivetrain;
-	private DcMotorEx lift1, lift2;
+	private DcMotorEx lift1, lift2, extendo;
 	private InputSystem driveInput, armInput;
+	private TumblerSystem intakeTumbler, scoreTumbler;
+	private Servo tumbler, smallTumbler, rotator, claw, scoreClaw, scoreRotator, scoreSmallTumbler;
 	private boolean extendoState = false;
-	private boolean scorerState = false;
 	private boolean rotatorLocked = false;
 	private boolean waitingToDrop = false;
 	private boolean grabbedWall = false;
@@ -247,16 +250,30 @@ public final class FanOpv2 extends LinearOpMode
 	private boolean liftOverride = false;
 	private boolean suspendState = false;
 	private boolean suspending = false;
-	private boolean holding = false;
+	private boolean mode_val = false;
+	private boolean state_specimen = false;
+	private boolean scoring = false;
+	private boolean lift_change_in_status = false;
+	private ExtendoMotorSystem.ExtendoLevel extendoLevel;
+	ExtendoMotorSystem.ExtendoLevel newLevel = extendoLevel;
+	public IntakeDirection intakeDirection = IntakeDirection.STOP;
+	private Utilities.State scorerState = Utilities.State.IDLE;
 	@Override
 	public void runOpMode()
 	{
 		waitForStart();
+		robot = new RobotHardwareNEW(hardwareMap);
+		robot.init();
+		intakeTumbler = robot.intakeTumbler;
 		driveInput = new InputSystem(gamepad1);
 		armInput = new InputSystem(gamepad2);
 		drivetrain = new MecanumDrive(hardwareMap, new Pose2d(0, 0, 0));
+
+		//scoreTumbler = hardwareMap.get(Servo.class, "scoreTumbler");
+
 		lift1 = hardwareMap.get(DcMotorEx.class, "lift1");
 		lift2 = hardwareMap.get(DcMotorEx.class, "lift2");
+		extendo = hardwareMap.get(DcMotorEx.class, "extendo");
 		lift1.setDirection(DcMotor.Direction.REVERSE);
 		lift2.setDirection(DcMotor.Direction.FORWARD);
 		lift1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -267,20 +284,175 @@ public final class FanOpv2 extends LinearOpMode
 		lift2.setTargetPosition(0);
 		lift1.setPower(0);
 		lift2.setPower(0);
-		lift1.setTargetPositionTolerance(20);
-		lift2.setTargetPositionTolerance(20);
+		extendo.setPower(0);
+		extendo.setTargetPositionTolerance(20);
+		lift1.setTargetPositionTolerance(30);
+		lift2.setTargetPositionTolerance(30);
 		lift1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 		lift2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-		waitForStart();
+		//waitForStart();
 		while (!isStopRequested())
 		{
 			telemetry.addData("Lift1 Current (mA)", lift1.getCurrent(CurrentUnit.MILLIAMPS));
 			telemetry.addData("Lift2 Current (mA)", lift2.getCurrent(CurrentUnit.MILLIAMPS));
-
 			telemetry.addData("Lift1 Encoder Position", lift1.getCurrentPosition());
 			telemetry.addData("Lift2 Encoder Position", lift2.getCurrentPosition());
-			telemetry.addData("LiftLevel2", liftLevel2);
+			telemetry.addData("Extendo Current (mA)", extendo.getCurrent(CurrentUnit.MILLIAMPS));
+			telemetry.addData("Exntedo Encoder Position", extendo.getCurrentPosition());
+			telemetry.addData("Extendo joystick", driveInput.getValue(Keybindings.Drive.EXTENDO_Y));
+
+			//telemetry.addData("Servo scoretumbler", scoreTumbler.getPosition());
+
+
 			telemetry.update();
+
+			float speed = 1f;
+			if (driveInput.isPressed(Keybindings.Drive.SUPPRESS_KEY)) speed = 0.4f;
+			drivetrain.setDrivePowers(
+					new PoseVelocity2d(new Vector2d(driveInput.getValue(Keybindings.Drive.DRIVE_Y),
+							driveInput.getValue(Keybindings.Drive.DRIVE_X)).times(-speed * (liftedSpecimen ? -1 : 1)),
+							(driveInput.getValue(Keybindings.Drive.DRIVE_ROT_L) - driveInput.getValue(Keybindings.Drive.DRIVE_ROT_R)) * speed
+					)
+			);
+
+
+			float joystick_extendo = (float) driveInput.getValue(Keybindings.Drive.EXTENDO_Y);
+			if(joystick_extendo < 0){
+				int nivel = (int) (joystick_extendo*-800);
+				extendo.setTargetPosition(nivel);
+				extendo.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+				extendo.setPower(1.0);
+			}
+			else if(joystick_extendo == 0){
+				int nivel = (int) (0);
+				extendo.setTargetPosition(nivel);
+				extendo.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+				extendo.setPower(1.0);
+			}
+
+
+			if(driveInput.isPressed(Keybindings.Drive.INTAKE_FORWARD))
+			{
+				intakeDirection = IntakeDirection.FORWARD;
+				intakeTumbler.setDestination(TumblerSystem.TumblerDestination.BUSY);
+			}
+			else if(driveInput.isPressed(Keybindings.Drive.INTAKE_REVERSE))
+			{
+				intakeDirection = IntakeDirection.REVERSE;
+				intakeTumbler.setDestination(TumblerSystem.TumblerDestination.HOVER);
+			}
+			else
+			{
+				intakeDirection = IntakeDirection.STOP;
+				intakeTumbler.setDestination(TumblerSystem.TumblerDestination.IDLE);
+			}
+			robot.intake.setIntakeDirection(intakeDirection);
+
+			if(armInput.isPressed(Keybindings.Arm.PRIMARY_KEY))
+			{
+				if (scoring == false)
+				{
+					setTimeout(() -> {
+						int nivel = (int) (0);
+						extendo.setTargetPosition(nivel);
+						extendo.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+						extendo.setPower(1.0);
+					}, 50);
+					robot.scoreExtendo.extend(ExtendoServoSystem.ExtendoLevel.RETRACTED);
+					setTimeout(() -> {
+						robot.scoreClaw.open();
+					}, 50);
+					setTimeout(() -> {
+						robot.scoreExtendo.extend(ExtendoServoSystem.ExtendoLevel.EXTENDED);
+					}, 150);
+					setTimeout(() -> {
+						robot.scoreClaw.close();
+					}, 250);
+					setTimeout(() -> {
+						robot.scoreExtendo.extend(ExtendoServoSystem.ExtendoLevel.RETRACTED);
+					}, 600);
+					setTimeout(() -> {
+						liftLevel = 950;
+						lift1.setTargetPosition(liftLevel);
+						lift2.setTargetPosition(liftLevel);
+					}, 700);
+					setTimeout(() -> {
+						robot.scoreTumbler.setDestination(TumblerSystem.TumblerDestination.HOVER);
+						scoring = true;
+					}, 900);
+				}
+
+				else if(scoring == true){
+					setTimeout(() -> {
+					setTimeout(() -> {
+						robot.scoreClaw.open();
+					}, 50);
+					setTimeout(() -> {
+						robot.scoreTumbler.setDestination(TumblerSystem.TumblerDestination.IDLE);
+					}, 300);
+					setTimeout(() -> {
+						liftLevel = 0;
+						lift1.setTargetPosition(liftLevel);
+						lift2.setTargetPosition(liftLevel);
+					}, 500);
+						scoring = false;
+					},600);
+				}
+			}
+
+			if(driveInput.isPressed(Keybindings.Drive.MODE)){
+				if(mode_val == false) {
+					setTimeout(() -> {
+						robot.scoreTumbler.setDestination(TumblerSystem.TumblerDestination.HOLD);
+						mode_val = true;
+					},200);
+				}
+				else{
+					setTimeout(() -> {
+						robot.scoreTumbler.setDestination(TumblerSystem.TumblerDestination.IDLE);
+						mode_val = false;
+					},200);
+				}
+			}
+
+			if(driveInput.isPressed(Keybindings.Drive.SPECIMEN)){
+				if(state_specimen == false) {
+					setTimeout(() -> {
+						robot.scoreClaw.close();
+						setTimeout(() ->{
+							liftLevel = 400;
+							lift1.setTargetPosition(liftLevel);
+							lift2.setTargetPosition(liftLevel);
+						}, 150);
+						setTimeout(() -> {
+							robot.scoreTumbler.setDestination(TumblerSystem.TumblerDestination.BUSY);
+						},500);
+						setTimeout(() -> {
+							robot.scoreExtendo.extend(ExtendoServoSystem.ExtendoLevel.EXTENDED);
+						},600);
+						state_specimen = true;
+					},200);
+				}
+				else{
+					setTimeout(() -> {
+						robot.scoreClaw.open();
+						setTimeout(() -> {
+							robot.scoreExtendo.extend(ExtendoServoSystem.ExtendoLevel.RETRACTED);
+						}, 150);
+						setTimeout(() ->{
+							liftLevel = -5;
+							lift1.setTargetPosition(liftLevel);
+							lift2.setTargetPosition(liftLevel);
+						}, 350);
+						setTimeout(() -> {
+							robot.scoreTumbler.setDestination(TumblerSystem.TumblerDestination.HOLD);
+							mode_val = true;
+						},450);
+						state_specimen = false;
+					},250);
+				}
+
+			}
 
 			if (lift1.isBusy()) lift1.setPower(1);
 			else setTimeout(() -> {
@@ -293,29 +465,29 @@ public final class FanOpv2 extends LinearOpMode
 
 			if (armInput.wasPressedThisFrame(Keybindings.Arm.BASKET_LOW_KEY))
 			{
-				liftLevel = 0;
-				liftLevel2 = 0;
+				liftLevel = 400;
+				robot.scoreTumbler.setDestination(TumblerSystem.TumblerDestination.HOVER);
+				lift_change_in_status = true;
+				//liftLevel2 = 0;
 				//scoreTumbler.setPosition(0.84);
 				//scoreSmallTumbler.setPosition(0.94);
 			}
 			else if (armInput.wasPressedThisFrame(Keybindings.Arm.BASKET_HIGH_KEY))
 			{
 				liftLevel = 900;
-				liftLevel2 = 900;
+				lift_change_in_status = true;
+				robot.scoreTumbler.setDestination(TumblerSystem.TumblerDestination.HOVER);
+				//liftLevel2 = 900;
 				//scoreTumbler.setPosition(0.84);
 				//scoreSmallTumbler.setPosition(0.94);
 			}
-			else if (armInput.wasPressedThisFrame(Keybindings.Arm.CHAMBER_HIGH_KEY))
+
+			if(lift_change_in_status == true)
 			{
-				liftLevel = 300;
-				liftLevel2 = 300;
-				//scoreTumbler.setPosition(0.84);
-				//scoreSmallTumbler.setPosition(0.55);
-			}
-
-
 				lift1.setTargetPosition(liftLevel);
-				lift2.setTargetPosition(liftLevel2);
+				lift2.setTargetPosition(liftLevel);
+				lift_change_in_status = false;
+			}
 
 
 

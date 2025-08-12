@@ -112,18 +112,6 @@ public final class tbdOp extends LinearOpMode {
 		Extendo();
 		Scorer();
 		if (suspendState == Utilities.State.BUSY) return;
-		telemetry.addData("Lift1 Current (mA)", lift1.getCurrent(CurrentUnit.MILLIAMPS));
-		telemetry.addData("Lift2 Current (mA)", lift2.getCurrent(CurrentUnit.MILLIAMPS));
-		telemetry.addData("Extendo Position", extendo.getPosition());
-		telemetry.addData("Tumbler Position", tumbler.getPosition());
-		telemetry.addData("Small Tumbler Position", smallTumbler.getPosition());
-		telemetry.addData("Rotator Position", rotator.getPosition());
-		telemetry.addData("Claw Position", claw.getPosition());
-		telemetry.addData("Score Claw Position", scoreClaw.getPosition());
-		telemetry.addData("Score Rotator Position", scoreRotator.getPosition());
-		telemetry.addData("Score Small Tumbler Position", scoreSmallTumbler.getPosition());
-		telemetry.addData("Lift1 Encoder Position", lift1.getCurrentPosition());
-		telemetry.addData("Lift2 Encoder Position", lift2.getCurrentPosition());
 		telemetry.update();
 	}
 
