@@ -267,7 +267,7 @@ public final class FanOp extends LinearOpMode
 		scoreClaw.setPosition(0.48);
 		scoreTumbler.setPosition(0.575);
 		scoreRotator.setPosition(0.758f);
-		scoreSmallTumbler.setPosition(0.43); //0.48
+		scoreSmallTumbler.setPosition(0.43); //0.
 		axle1.setPosition(0.5);
 		axle2.setPosition(0.5);
 		lift1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);

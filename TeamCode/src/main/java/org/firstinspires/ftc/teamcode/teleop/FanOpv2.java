@@ -11,6 +11,7 @@ import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
+import com.acmerobotics.roadrunner.ftc.MidpointTimer;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -35,10 +36,12 @@ import org.firstinspires.ftc.teamcode.systems.TumblerSystem;
 import org.firstinspires.ftc.teamcode.systems.OpenCloseSystem;
 import org.firstinspires.ftc.teamcode.systems.IntakeSystem;
 import java.util.HashMap;
-
+import com.qualcomm.robotcore.util.ElapsedTime;
 @TeleOp(name = "\uD83D\uDC79Fane Boss v2\uD83D\uDC79 Op", group = "TeleOp")
 public final class FanOpv2 extends LinearOpMode
 {
+	private static Runnable runnable;
+	private static long delay;
 	private RobotHardwareNEW robot;
 	private static class Keybindings
 	{
@@ -237,7 +240,7 @@ public final class FanOpv2 extends LinearOpMode
 	private DcMotorEx lift1, lift2, extendo;
 	private InputSystem driveInput, armInput;
 	private TumblerSystem intakeTumbler, scoreTumbler;
-	private Servo tumbler, smallTumbler, rotator, claw, scoreClaw, scoreRotator, scoreSmallTumbler;
+	private Servo axle, suspender1, suspender2;
 	private boolean extendoState = false;
 	private boolean rotatorLocked = false;
 	private boolean waitingToDrop = false;
@@ -270,26 +273,55 @@ public final class FanOpv2 extends LinearOpMode
 		drivetrain = new MecanumDrive(hardwareMap, new Pose2d(0, 0, 0));
 
 		//scoreTumbler = hardwareMap.get(Servo.class, "scoreTumbler");
-
+		axle = hardwareMap.get(Servo.class, "axle");
+		suspender1= hardwareMap.get(Servo.class, "suspender1");
+		suspender2 = hardwareMap.get(Servo.class, "suspender2");
+		axle.setPosition(0.5);
 		lift1 = hardwareMap.get(DcMotorEx.class, "lift1");
 		lift2 = hardwareMap.get(DcMotorEx.class, "lift2");
 		extendo = hardwareMap.get(DcMotorEx.class, "extendo");
-		lift1.setDirection(DcMotor.Direction.REVERSE);
-		lift2.setDirection(DcMotor.Direction.FORWARD);
+		lift1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		lift2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		lift1.setDirection(DcMotor.Direction.FORWARD);
+		lift2.setDirection(DcMotor.Direction.REVERSE);
+		lift1.setPower(1);
+		lift2.setPower(1);
+		ElapsedTime timer = new ElapsedTime();
+		while(timer.seconds()<0.2){
+
+		}
+		lift1.setPower(0);
+		lift2.setPower(0);
+		sleep(200);
 		lift1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 		lift2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 		lift1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 		lift2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 		lift1.setTargetPosition(0);
 		lift2.setTargetPosition(0);
-		lift1.setPower(0);
-		lift2.setPower(0);
-		extendo.setPower(0);
-		extendo.setTargetPositionTolerance(20);
-		lift1.setTargetPositionTolerance(30);
-		lift2.setTargetPositionTolerance(30);
+		lift1.setTargetPositionTolerance(20);
+		lift2.setTargetPositionTolerance(20);
 		lift1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 		lift2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+		lift1.setDirection(DcMotor.Direction.REVERSE);
+		lift2.setDirection(DcMotor.Direction.FORWARD);
+		extendo.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+		extendo.setDirection(DcMotor.Direction.FORWARD);
+		extendo.setPower(1.0);
+		timer = new ElapsedTime();
+		while(timer.seconds()<0.5){
+			telemetry.addData("Motor Power", extendo.getPower());
+			telemetry.addData("Motor Encoder Position", extendo.getCurrentPosition());
+			telemetry.addData("Extendo Current (mA)", extendo.getCurrent(CurrentUnit.MILLIAMPS));
+			telemetry.update();
+		}
+		extendo.setPower(0);
+		extendo.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+		extendo.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+		extendo.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+		extendo.setDirection(DcMotor.Direction.REVERSE);
+		extendo.setTargetPosition(0);
+		extendo.setTargetPositionTolerance(20);
 		//waitForStart();
 		while (!isStopRequested())
 		{
@@ -298,8 +330,10 @@ public final class FanOpv2 extends LinearOpMode
 			telemetry.addData("Lift1 Encoder Position", lift1.getCurrentPosition());
 			telemetry.addData("Lift2 Encoder Position", lift2.getCurrentPosition());
 			telemetry.addData("Extendo Current (mA)", extendo.getCurrent(CurrentUnit.MILLIAMPS));
-			telemetry.addData("Exntedo Encoder Position", extendo.getCurrentPosition());
+			telemetry.addData("Extendo Encoder Position", extendo.getCurrentPosition());
 			telemetry.addData("Extendo joystick", driveInput.getValue(Keybindings.Drive.EXTENDO_Y));
+			telemetry.addData("Y Pressed", armInput.isPressed(Keybindings.Arm.SUSPEND_KEY));
+			telemetry.addData("Y Was Pressed This Frame", armInput.wasPressedThisFrame(Keybindings.Arm.SUSPEND_KEY));
 
 			//telemetry.addData("Servo scoretumbler", scoreTumbler.getPosition());
 
@@ -314,8 +348,20 @@ public final class FanOpv2 extends LinearOpMode
 							(driveInput.getValue(Keybindings.Drive.DRIVE_ROT_L) - driveInput.getValue(Keybindings.Drive.DRIVE_ROT_R)) * speed
 					)
 			);
-
-
+			if(armInput.isPressed(Keybindings.Arm.RIGHT_KEY) && armInput.isPressed(Keybindings.Arm.LEFT_KEY)){
+				lift1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+				lift2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+				lift1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+				lift2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+				lift1.setTargetPosition(0);
+				lift2.setTargetPosition(0);
+				lift1.setPower(0);
+				lift2.setPower(0);
+				lift1.setTargetPositionTolerance(20);
+				lift2.setTargetPositionTolerance(20);
+				lift1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+				lift2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+			}
 			float joystick_extendo = (float) driveInput.getValue(Keybindings.Drive.EXTENDO_Y);
 			if(joystick_extendo < 0){
 				int nivel = (int) (joystick_extendo*-800);
@@ -372,7 +418,7 @@ public final class FanOpv2 extends LinearOpMode
 						robot.scoreExtendo.extend(ExtendoServoSystem.ExtendoLevel.RETRACTED);
 					}, 600);
 					setTimeout(() -> {
-						liftLevel = 950;
+						liftLevel = 900;
 						lift1.setTargetPosition(liftLevel);
 						lift2.setTargetPosition(liftLevel);
 					}, 700);
@@ -394,9 +440,9 @@ public final class FanOpv2 extends LinearOpMode
 						liftLevel = 0;
 						lift1.setTargetPosition(liftLevel);
 						lift2.setTargetPosition(liftLevel);
-					}, 500);
 						scoring = false;
-					},600);
+					}, 500);
+					},100);
 				}
 			}
 
@@ -468,7 +514,7 @@ public final class FanOpv2 extends LinearOpMode
 				liftLevel = 400;
 				robot.scoreTumbler.setDestination(TumblerSystem.TumblerDestination.HOVER);
 				lift_change_in_status = true;
-				//liftLevel2 = 0;
+				liftLevel2 = 0;
 				//scoreTumbler.setPosition(0.84);
 				//scoreSmallTumbler.setPosition(0.94);
 			}
@@ -477,7 +523,7 @@ public final class FanOpv2 extends LinearOpMode
 				liftLevel = 900;
 				lift_change_in_status = true;
 				robot.scoreTumbler.setDestination(TumblerSystem.TumblerDestination.HOVER);
-				//liftLevel2 = 900;
+				liftLevel2 = 900;
 				//scoreTumbler.setPosition(0.84);
 				//scoreSmallTumbler.setPosition(0.94);
 			}
@@ -489,6 +535,63 @@ public final class FanOpv2 extends LinearOpMode
 				lift_change_in_status = false;
 			}
 
+			//SUSPEND
+			if (lift1.isBusy()) lift1.setPower(1);
+			else lift1.setPower(0);
+			if (lift2.isBusy()) lift2.setPower(1);
+			else lift2.setPower(0);
+			if(extendo.isBusy()) extendo.setPower(1);
+			else extendo.setPower(0);
+			if (armInput.wasPressedThisFrame(Keybindings.Arm.CANCEL_SUSPEND_KEY) && suspendState)
+			{
+				lift1.setTargetPosition(0);
+				lift2.setTargetPosition(0);
+
+				suspendState = false;
+			}
+
+			if (armInput.wasPressedThisFrame(Keybindings.Arm.SUSPEND_KEY))
+			{
+				if (!suspendState)
+				{
+					suspendState = true;
+					liftLevel = 400;
+					liftLevel2 = 400;
+					lift1.setTargetPosition(liftLevel);
+					lift2.setTargetPosition(liftLevel);
+				}
+				else
+				{
+					//PICIORUSE SI MODIFICAT DELAYURI PT OPTIMIZARE
+					suspending = true;
+					liftLevel = 0;
+					liftLevel2 = 0;
+					lift1.setTargetPosition(liftLevel);
+					lift2.setTargetPosition(liftLevel);
+					axle.setPosition(0.59f);
+						drivetrain.leftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+						drivetrain.rightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+						drivetrain.leftBack.setPower(1f);
+						drivetrain.rightBack.setPower(1f);
+					setTimeout(() -> {
+						liftLevel = 750;
+						liftLevel2 = 750;
+						lift1.setTargetPosition(liftLevel);
+						lift2.setTargetPosition(liftLevel);
+					setTimeout(() -> {
+						liftLevel = 0;
+						liftLevel2 = 0;
+						lift1.setTargetPosition(liftLevel);
+						lift2.setTargetPosition(liftLevel);
+					}, 5000);
+					}, 5000);
+
+
+				}
+			}
+
+
+
 
 
 
@@ -497,6 +600,8 @@ public final class FanOpv2 extends LinearOpMode
 
 	private static void setTimeout(Runnable runnable, long delay)
 	{
+		FanOpv2.runnable = runnable;
+		FanOpv2.delay = delay;
 		new Thread(() -> {
 			try
 			{
